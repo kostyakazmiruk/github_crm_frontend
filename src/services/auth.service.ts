@@ -10,8 +10,8 @@ export class AuthService {
     return response.data;
   }
 
-  static async register(data: RegisterDto): Promise<AuthResponse> {
-    const response = await api.post('/auth/register', data);
+  static async signup(data: RegisterDto): Promise<AuthResponse> {
+    const response = await api.post('/auth/signup', data);
     this.setToken(response.data.access_token);
     return response.data;
   }

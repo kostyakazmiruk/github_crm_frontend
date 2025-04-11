@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: (credentials: { email: string; password: string }) =>
-      AuthService.login(credentials),
+      AuthService.signup(credentials),
     onSuccess: () => {
       router.push('/dashboard');
     },
@@ -46,9 +46,9 @@ export default function LoginPage() {
     <div className="flex h-screen items-center justify-center bg-gray-50">
       <Card className="w-[400px]">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">Create your user</CardTitle>
           <CardDescription>
-            Sign in to your GitHub CRM account
+            Sign up to your GitHub CRM account
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -88,12 +88,12 @@ export default function LoginPage() {
               className="w-full"
               disabled={loginMutation.isPending}
             >
-              {loginMutation.isPending ? 'Signing in...' : 'Sign in'}
+              {loginMutation.isPending ? 'Signing up...' : 'Sign up'}
             </Button>
             <div className="text-center text-sm">
-              Don't have an account?{' '}
-              <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-                Sign up
+              If you have an account{' '}
+              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                Log in
               </Link>
             </div>
           </CardFooter>
