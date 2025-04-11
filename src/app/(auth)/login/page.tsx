@@ -51,7 +51,7 @@ export default function LoginPage() {
             Sign in to your GitHub CRM account
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="grid gap-4">
           <CardContent>
             {error && (
               <Alert variant="destructive" className="mb-4">
