@@ -17,7 +17,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { RefreshCcw,PlusIcon, TrashIcon } from 'lucide-react';
+import { RefreshCcw, PlusIcon, TrashIcon, LogOut } from 'lucide-react';
+import { AuthService } from '@/services/auth.service';
 
 // Define dialog types
 type DialogType = 'none' | 'add' | 'delete';
@@ -97,6 +98,12 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-end items-center mb-3">
+        <Button onClick={() => AuthService.logout()} className="opacity-90">
+          <LogOut className="h-5 w-5 mr-2" />
+          Log out
+        </Button>
+      </div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">GitHub Projects</h1>
         <Button onClick={openAddDialog}>

@@ -19,6 +19,7 @@ export class AuthService {
   static async logout(): Promise<void> {
     localStorage.removeItem('token');
     api.defaults.headers.common['Authorization'] = '';
+    window.location.href = '/login'
   }
 
   static async getProfile(): Promise<any> {
