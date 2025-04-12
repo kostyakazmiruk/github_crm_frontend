@@ -8,17 +8,37 @@ import { Project, ProjectService } from '@/services/project.service';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog, DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 export default function DashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient()
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [ownerRepo, setOwnerRepo] = useState("facebook/react")
+
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => ProjectService.getProjects(),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (repoPath: string) => ProjectService.addProject({ path: repoPath }),
+    onSuccess: () => {
+      router.push('/dashboard');
+      setIsAddOpen(false)
+    },
   });
 
   const updateMutation = useMutation({
@@ -55,12 +75,13 @@ export default function DashboardPage() {
       </div>
     );
   }
+  console.log({ownerRepo})
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">GitHub Projects</h1>
-        <Button onClick={() => router.push('/projects/new')}>
+        <Button onClick={() => setIsAddOpen(true)}>
           {/*<PlusIcon className="h-5 w-5 mr-2" />*/}
           Add Project
         </Button>
@@ -146,33 +167,65 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
+      {/*Add project dialog*/}
+
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add Public GitHub Project</DialogTitle>
+              <DialogDescription>Format should be: owner/repo (e.g. facebook/react)</DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="ownerRepo" className="text-right">
+                  Owner/Repo
+                </Label>
+                <Input
+                  id="ownerRepo"
+                  value={ownerRepo || "facebook/react"}
+                  onChange={(e) => setOwnerRepo(e.target.value)}
+                  className="col-span-3"
+                  placeholder="facebook/react"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={() => addMutation.mutate(ownerRepo)} disabled={addMutation.isPending}>
+                {addMutation.isPending ? 'Adding...' : 'Add Project'}
+              </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogHeader className="mx-auto max-w-sm rounded bg-white p-6">
-            <DialogTitle className="text-lg font-medium">Delete Project</DialogTitle>
-            <DialogDescription className="mt-2 text-sm text-gray-500">
-              Are you sure you want to delete the project {projectToDelete?.owner}/{projectToDelete?.name}?
-              This action cannot be undone.
-            </DialogDescription>
+      {/*<Dialog open={isDeleteOpen} onOpenChange={() => setIsDeleteOpen(false)}>*/}
+      {/*  <div className="fixed inset-0 bg-black/30" aria-hidden="true" />*/}
+      {/*  <div className="fixed inset-0 flex items-center justify-center p-4">*/}
+      {/*    <DialogHeader className="mx-auto max-w-sm rounded bg-white p-6">*/}
+      {/*      <DialogTitle className="text-lg font-medium">Delete Project</DialogTitle>*/}
+      {/*      <DialogDescription className="mt-2 text-sm text-gray-500">*/}
+      {/*        Are you sure you want to delete the project {projectToDelete?.owner}/{projectToDelete?.name}?*/}
+      {/*        This action cannot be undone.*/}
+      {/*      </DialogDescription>*/}
 
-            <div className="mt-4 flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDelete}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-              </Button>
-            </div>
-          </DialogHeader>
-        </div>
-      </Dialog>
+      {/*      <div className="mt-4 flex justify-end space-x-2">*/}
+      {/*        <Button onClick={() => setIsDeleteOpen(false)} className="cursor-pointer hover:opacity-90">*/}
+      {/*          Cancel*/}
+      {/*        </Button>*/}
+      {/*        <Button*/}
+      {/*          variant="destructive"*/}
+      {/*          onClick={confirmDelete}*/}
+      {/*          className="cursor-pointer hover:opacity-90"*/}
+      {/*          disabled={deleteMutation.isPending}*/}
+      {/*        >*/}
+      {/*          {deleteMutation.isPending ? 'Deleting...' : 'Delete'}*/}
+      {/*        </Button>*/}
+      {/*      </div>*/}
+      {/*    </DialogHeader>*/}
+      {/*  </div>*/}
+      {/*</Dialog>*/}
     </div>
   );
 }
