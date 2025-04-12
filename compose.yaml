@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NEXT_PUBLIC_BACKEND_API: "http://localhost:8000/api"
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
+networks:
+  default:
+    external: true
+    name: github_crm
