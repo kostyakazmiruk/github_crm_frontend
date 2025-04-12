@@ -4,30 +4,34 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Project, ProjectService } from '@/services/project.service';
-// import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import {
-  Dialog, DialogContent,
+  Dialog,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { RefreshCcw,PlusIcon, TrashIcon } from 'lucide-react';
+
+// Define dialog types
+type DialogType = 'none' | 'add' | 'delete';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const queryClient = useQueryClient()
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [ownerRepo, setOwnerRepo] = useState("facebook/react")
+  const queryClient = useQueryClient();
 
+  // Dialog state management
+  const [dialogType, setDialogType] = useState<DialogType>('none');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [ownerRepo, setOwnerRepo] = useState("facebook/react");
 
+  // Query and mutations
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => ProjectService.getProjects(),
@@ -36,8 +40,8 @@ export default function DashboardPage() {
   const addMutation = useMutation({
     mutationFn: (repoPath: string) => ProjectService.addProject({ path: repoPath }),
     onSuccess: () => {
-      router.push('/dashboard');
-      setIsAddOpen(false)
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      closeDialog();
     },
   });
 
@@ -52,37 +56,51 @@ export default function DashboardPage() {
     mutationFn: (id: number) => ProjectService.deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      setIsDeleteOpen(false);
+      closeDialog();
     },
   });
 
-  const handleDelete = (project:Project) => {
-    setProjectToDelete(project);
-    setIsDeleteOpen(true);
+  // Dialog handlers
+  const openAddDialog = () => {
+    setDialogType('add');
   };
 
-  const confirmDelete = () => {
-    if (projectToDelete) {
-      deleteMutation.mutate(projectToDelete.id);
+  const openDeleteDialog = (project: Project) => {
+    setSelectedProject(project);
+    setDialogType('delete');
+  };
+
+  const closeDialog = () => {
+    setDialogType('none');
+    setSelectedProject(null);
+  };
+
+  const handleConfirmAction = () => {
+    if (dialogType === 'add') {
+      addMutation.mutate(ownerRepo);
+    } else if (dialogType === 'delete' && selectedProject) {
+      deleteMutation.mutate(selectedProject.id);
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        Loading..
-        {/*<Spinner size="lg" />*/}
+        Loading...
       </div>
     );
   }
-  console.log({ownerRepo})
+
+  // Determine if dialog is open
+  const isDialogOpen = dialogType !== 'none';
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">GitHub Projects</h1>
-        <Button onClick={() => setIsAddOpen(true)}>
-          {/*<PlusIcon className="h-5 w-5 mr-2" />*/}
+        <Button onClick={openAddDialog}>
+          <PlusIcon className="h-5 w-5 mr-2" />
           Add Project
         </Button>
       </div>
@@ -133,7 +151,7 @@ export default function DashboardPage() {
                     {project.issues.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDistanceToNow(project.createdAtTimestamp)} ago
+                    {project.createdAtTimestamp}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Button
@@ -143,15 +161,15 @@ export default function DashboardPage() {
                       onClick={() => updateMutation.mutate(project.id)}
                       disabled={updateMutation.isPending}
                     >
-                      {/*<RefreshIcon className="h-4 w-4" />*/}
+                      <RefreshCcw className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       className="text-red-600 hover:text-red-800"
-                      onClick={() => handleDelete(project)}
+                      onClick={() => openDeleteDialog(project)}
                     >
-                      {/*<TrashIcon className="h-4 w-4" />*/}
+                      <TrashIcon className="h-4 w-4" />
                     </Button>
                   </td>
                 </tr>
@@ -167,65 +185,66 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
-      {/*Add project dialog*/}
 
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+      {/* Dynamic Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add Public GitHub Project</DialogTitle>
-              <DialogDescription>Format should be: owner/repo (e.g. facebook/react)</DialogDescription>
-            </DialogHeader>
+          {dialogType === 'add' && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Add Public GitHub Project</DialogTitle>
+                <DialogDescription>Format should be: owner/repo (e.g. facebook/react)</DialogDescription>
+              </DialogHeader>
 
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="ownerRepo" className="text-right">
-                  Owner/Repo
-                </Label>
-                <Input
-                  id="ownerRepo"
-                  value={ownerRepo || "facebook/react"}
-                  onChange={(e) => setOwnerRepo(e.target.value)}
-                  className="col-span-3"
-                  placeholder="facebook/react"
-                />
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="ownerRepo" className="text-right">
+                    Owner/Repo
+                  </Label>
+                  <Input
+                    id="ownerRepo"
+                    value={ownerRepo}
+                    onChange={(e) => setOwnerRepo(e.target.value)}
+                    className="col-span-3"
+                    placeholder="facebook/react"
+                  />
+                </div>
               </div>
-            </div>
 
-            <DialogFooter>
-              <Button onClick={() => addMutation.mutate(ownerRepo)} disabled={addMutation.isPending}>
-                {addMutation.isPending ? 'Adding...' : 'Add Project'}
-              </Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button onClick={handleConfirmAction} disabled={addMutation.isPending}>
+                  {addMutation.isPending ? 'Adding...' : 'Add Project'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+
+          {dialogType === 'delete' && selectedProject && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Delete Project</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete the project {selectedProject.owner}/{selectedProject.name}?
+                  This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={closeDialog} className="mr-2">
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleConfirmAction}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      {/*<Dialog open={isDeleteOpen} onOpenChange={() => setIsDeleteOpen(false)}>*/}
-      {/*  <div className="fixed inset-0 bg-black/30" aria-hidden="true" />*/}
-      {/*  <div className="fixed inset-0 flex items-center justify-center p-4">*/}
-      {/*    <DialogHeader className="mx-auto max-w-sm rounded bg-white p-6">*/}
-      {/*      <DialogTitle className="text-lg font-medium">Delete Project</DialogTitle>*/}
-      {/*      <DialogDescription className="mt-2 text-sm text-gray-500">*/}
-      {/*        Are you sure you want to delete the project {projectToDelete?.owner}/{projectToDelete?.name}?*/}
-      {/*        This action cannot be undone.*/}
-      {/*      </DialogDescription>*/}
-
-      {/*      <div className="mt-4 flex justify-end space-x-2">*/}
-      {/*        <Button onClick={() => setIsDeleteOpen(false)} className="cursor-pointer hover:opacity-90">*/}
-      {/*          Cancel*/}
-      {/*        </Button>*/}
-      {/*        <Button*/}
-      {/*          variant="destructive"*/}
-      {/*          onClick={confirmDelete}*/}
-      {/*          className="cursor-pointer hover:opacity-90"*/}
-      {/*          disabled={deleteMutation.isPending}*/}
-      {/*        >*/}
-      {/*          {deleteMutation.isPending ? 'Deleting...' : 'Delete'}*/}
-      {/*        </Button>*/}
-      {/*      </div>*/}
-      {/*    </DialogHeader>*/}
-      {/*  </div>*/}
-      {/*</Dialog>*/}
     </div>
   );
 }
