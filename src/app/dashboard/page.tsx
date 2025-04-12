@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => ProjectService.getProjects(),
+    initialData: [],
   });
 
   const addMutation = useMutation({
@@ -93,6 +94,8 @@ export default function DashboardPage() {
     );
   }
 
+
+
   // Determine if dialog is open
   const isDialogOpen = dialogType !== 'none';
 
@@ -138,8 +141,14 @@ export default function DashboardPage() {
             </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-            {projects?.length > 0 ? (
-              projects.map((project) => (
+            {projects?.length < 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                  No projects found. Add your first GitHub project!
+                </td>
+              </tr>
+            ) : (
+              projects?.map((project) => (
                 <tr key={project.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
@@ -181,12 +190,6 @@ export default function DashboardPage() {
                   </td>
                 </tr>
               ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                  No projects found. Add your first GitHub project!
-                </td>
-              </tr>
             )}
             </tbody>
           </table>
