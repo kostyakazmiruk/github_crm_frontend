@@ -1,7 +1,7 @@
-// apps/client/services/auth.service.ts
+// services/auth.service.ts
 import { api } from '@/lib/axios';
 import { AuthResponse, LoginDto, RegisterDto } from '@/services/dto/auth.dto';
-
+import Cookies from 'js-cookie';
 
 export class AuthService {
   static async login(data: LoginDto): Promise<AuthResponse> {
@@ -18,8 +18,9 @@ export class AuthService {
 
   static async logout(): Promise<void> {
     localStorage.removeItem('token');
+    Cookies.remove('auth_status');
     api.defaults.headers.common['Authorization'] = '';
-    window.location.href = '/login'
+    window.location.href = '/login';
   }
 
   static async getProfile(): Promise<any> {
@@ -36,7 +37,13 @@ export class AuthService {
 
   static setToken(token: string): void {
     if (typeof window !== 'undefined') {
+      // Store token in localStorage for API requests
       localStorage.setItem('token', token);
+
+      // Set a cookie that middleware can read - just a marker, not the actual token
+      Cookies.set('auth_status', 'true', { path: '/', expires: 7 }); // 7 days
+
+      // Set Authorization header for API requests
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
   }
