@@ -1,5 +1,8 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Backend Repo
+https://github.com/kostyakazmiruk/github_crm_api
+
 ## Getting Started
 
 First, run the development server:
